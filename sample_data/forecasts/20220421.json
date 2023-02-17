@@ -1,0 +1,26 @@
+[
+  {
+    "for_date": "2022-04-22",
+    "city": "Adelaide",
+    "min": 20,
+    "max": 31
+  },
+  {
+    "for_date": "2022-04-23",
+    "city": "Adelaide",
+    "min": 19,
+    "max": 25
+  },
+  {
+    "date": "2022-04-22",
+    "city": "Melbourne",
+    "min": 19,
+    "max": 25
+  },
+  {
+    "date": "2022-04-23",
+    "city": "Melbourne",
+    "min": 19,
+    "max": 25
+  }
+]

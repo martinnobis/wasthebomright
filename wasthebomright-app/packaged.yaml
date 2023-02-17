@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'wasthebomright-app
+
+  SAM Template for wasthebomright-app
+
+  '
+Globals:
+  Function:
+    Timeout: 30
+Resources:
+  BomScraperFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://bomscrapercode/a4d7702caa35e15aa6987eaceb46f051
+      Handler: app.get_and_process_bom_data
+      Runtime: python3.9
+      AutoPublishAlias: live
+      Policies:
+      - AWSLambdaExecute
+      Architectures:
+      - x86_64
+      Events:
+        DailyTimer:
+          Type: Schedule
+          Properties:
+            Schedule: cron(45 9 * * ? *)
+    Metadata:
+      SamResourceId: BomScraperFunction
