@@ -9,21 +9,25 @@ Globals:
   Function:
     Timeout: 30
 Resources:
-  BomScraperFunction:
+  ObsMinFunctionDocker:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: s3://bomscrapercode/a4d7702caa35e15aa6987eaceb46f051
-      Handler: app.get_and_process_bom_data
-      Runtime: python3.9
+      PackageType: Image
+      ImageUri: 489446838335.dkr.ecr.ap-southeast-2.amazonaws.com/wasthebomright:latest
+      ImageConfig:
+        EntryPoint:
+        - python
+        - -m
+        - awslambdaric
+        Command:
+        - app.obs_min_lambda
       AutoPublishAlias: live
       Policies:
       - AWSLambdaExecute
-      Architectures:
-      - x86_64
       Events:
         DailyTimer:
           Type: Schedule
           Properties:
-            Schedule: cron(45 9 * * ? *)
+            Schedule: cron(0 22 * * ? *)
     Metadata:
-      SamResourceId: BomScraperFunction
+      SamResourceId: ObsMinFunctionDocker

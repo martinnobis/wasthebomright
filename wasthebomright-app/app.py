@@ -1,9 +1,4 @@
-import datetime
-from ftplib import FTP
 import json
-import xml.etree.ElementTree as ET
-from zoneinfo import ZoneInfo
-import urllib.parse
 
 import boto3
 
@@ -12,23 +7,59 @@ import image_generator
 import settings
 import utils
 
-DATA_BUCKET_NAME = "wasthebomright"
+OBSERVATIONS_MIN_BUCKET_NAME = "observations-min"
+OBSERVATIONS_MAX_BUCKET_NAME = "observations-max"
+FORECASTS_BUCKET_NAME = "bom-forecasts"
 
 
-def bom_scraper_lambda(event, context):
-    """Entry point for AWS Lambda.
-
-    Creates a JSON file in S3 with the days observed temperatures and forecasts for all cities.
-    """
+def obs_min_lambda(event, context):
+    """Entry point for AWS Lambda. """
     client = boto3.client("s3")
-    todays_date = str(datetime.datetime.now(ZoneInfo("Australia/Melbourne")).date())
 
-    data = bom_scraper.get_observations_and_future_forecasts_for_all_cities(todays_date)
+    data = bom_scraper.get_observations_data("min")
 
     client.put_object(
         Body=bytes(json.dumps(data, indent=4).encode("UTF-8")),
-        Bucket=DATA_BUCKET_NAME,  # TODO: should be renamed to something more descriptive
-        Key=f"{todays_date}.json",
+        Bucket=OBSERVATIONS_MIN_BUCKET_NAME,
+        Key=f"min_obs_{utils.get_yesterdays_date()}.json",
+    )
+
+def obs_max_lambda(event, context):
+    """Entry point for AWS Lambda."""
+    client = boto3.client("s3")
+
+    data = bom_scraper.get_observations_data("max")
+
+    client.put_object(
+        Body=bytes(json.dumps(data, indent=4).encode("UTF-8")),
+        Bucket=OBSERVATIONS_MAX_BUCKET_NAME,
+        Key=f"max_obs_{utils.get_todays_date()}.json",
+    )
+
+
+def forecasts_lambda(event, context):
+    """Entry point for AWS Lambda."""
+    client = boto3.client("s3")
+
+    data = bom_scraper.get_forecasts_data()
+
+    client.put_object(
+        Body=bytes(json.dumps(data, indent=4).encode("UTF-8")),
+        Bucket=FORECASTS_BUCKET_NAME,
+        Key=f"forecasts_{utils.get_todays_date()}.json",
+    )
+
+
+def forecasts_lambda(event, context):
+    """Entry point for AWS Lambda."""
+    client = boto3.client("s3")
+
+    data = bom_scraper.get_forecasts_data()
+
+    client.put_object(
+        Body=bytes(json.dumps(data, indent=4).encode("UTF-8")),
+        Bucket=FORECASTS_BUCKET_NAME,
+        Key=f"forecasts_{utils.get_todays_date()}.json",
     )
 
 

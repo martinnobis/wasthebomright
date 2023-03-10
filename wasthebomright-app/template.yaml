@@ -11,41 +11,66 @@ Globals:
     Timeout: 30
 
 Resources:
-  BomScraperFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  ObsMinFunctionDocker:
+    Type: AWS::Serverless::Function
     Properties:
-      CodeUri: build/
-      Handler: app.bom_scraper_lambda
-      Runtime: python3.9
+      PackageType: Image
+      ImageUri: 489446838335.dkr.ecr.ap-southeast-2.amazonaws.com/wasthebomright:latest
+      ImageConfig:
+        EntryPoint:
+          - 'python'
+          - '-m'
+          - 'awslambdaric'
+        Command:
+          - 'app.obs_min_lambda'
       AutoPublishAlias: live
       Policies:
         - AWSLambdaExecute
-      Architectures:
-        - x86_64
       Events:
         DailyTimer:
           Type: Schedule
           Properties:
-            Schedule: cron(45 9 * * ? *)
-  ImageGeneratorFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-    Properties:
-      CodeUri: build/
-      Handler: app.image_generator_lambda
-      Runtime: python3.9
-      AutoPublishAlias: live
-      Policies:
-        - AWSLambdaExecute
-      Architectures:
-        - x86_64
-      Events:
-        FileUpload:
-          Type: S3
-          Properties:
-            Bucket: wasthebomright
-            Events: s3:ObjectCreated:*
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: suffix
-                    Value: '.json'
+            Schedule: cron(0 22 * * ? *) # 9AM MEL time
+  # ObsMaxFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     CodeUri: build/
+  #     Handler: app.obs_max_lambda
+  #     Runtime: python3.9
+  #     AutoPublishAlias: live
+  #     Policies:
+  #       - AWSLambdaExecute
+  #     Architectures:
+  #       - x86_64
+  #     Events:
+  #       DailyTimer:
+  #         Type: Schedule
+  #         Properties:
+  #           Schedule: cron(45 9 * * ? *) # 8:45PM Mel time
+  # ForecastsFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     CodeUri: build/
+  #     Handler: app.forecasts_lambda
+  #     Runtime: python3.9
+  #     AutoPublishAlias: live
+  #     Policies:
+  #       - AWSLambdaExecute
+  #     Architectures:
+  #       - x86_64
+  #     Events:
+  #       DailyTimer:
+  #         Type: Schedule
+  #         Properties:
+  #           Schedule: cron(30 4 * * ? *) # 3:30PM Mel time
+  # ImageGeneratorFunction:
+  #   Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  #   Properties:
+  #     CodeUri: build/
+  #     Handler: app.image_generator_lambda
+  #     Runtime: python3.9
+  #     AutoPublishAlias: live
+  #     Policies:
+  #       - AWSLambdaExecute
+  #     Architectures:
+  #       - x86_64

@@ -4,26 +4,26 @@ import json
 from zoneinfo import ZoneInfo
 
 import boto3
-import jsonschema
 
 import settings
 
 
-def generate_fake_obs_and_forecast_data():
-    data = {}
-
-    validate_obs_and_forecast(data)
-    return data
-
-def validate_obs_and_forecast(data: dict) -> bool:
-    with open("obs_and_forecast.schema") as f:
-        schema = json.load(f)
-    jsonschema.validate(instance=data, schema=schema)
+def get_time() -> str:
+    """Returns the time in Mel as '20:46:13'."""
+    t = datetime.datetime.now(ZoneInfo("Australia/Melbourne")).time()
+    return str(t)[:-7]  # strip off microseconds
 
 
-def get_todays_date():
-    """Returns todays date as '2023-02-12'."""
-    return str(datetime.datetime.now(ZoneInfo("Australia/Melbourne")).date())
+def get_todays_date() -> str:
+    """Returns today's date as '2023-02-12'."""
+    d = datetime.datetime.now(ZoneInfo("Australia/Melbourne")).date()
+    return str(d)
+
+
+def get_yesterdays_date() -> str:
+    """Returns yesterday's date as '2023-02-11'."""
+    d = (datetime.datetime.now(ZoneInfo("Australia/Melbourne")) - datetime.timedelta(1)).date() 
+    return str(d)
 
 
 def upload_file(file, file_name, bucket):

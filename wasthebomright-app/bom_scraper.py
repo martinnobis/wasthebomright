@@ -1,5 +1,4 @@
 """Get observed temp measurements and future forecast data from the BOM."""
-import datetime
 from ftplib import FTP
 import io
 import json
@@ -7,7 +6,6 @@ import logging
 import os
 import sys
 import xml.etree.ElementTree as ET
-from zoneinfo import ZoneInfo
 
 import settings
 import utils 
@@ -16,27 +14,6 @@ import utils
 log_Format = "%(levelname)s %(asctime)s - %(message)s"
 logging.basicConfig(stream=sys.stdout, format=log_Format, level=logging.INFO)
 logger = logging.getLogger()
-
-
-# def get_ftp_file(filename):
-#     write_file = os.path.join(settings.DOWNLOAD_DIR, filename)
-
-#     if os.path.isfile(write_file):
-#         logger.warning(f"File '{filename}' already downloaded.")
-#     else:
-#         with FTP("ftp.bom.gov.au") as ftp:
-#             ftp.login()
-#             ftp.cwd("anon/gen/fwo/")
-
-#             if not os.path.exists(settings.DOWNLOAD_DIR):
-#                 os.makedirs(settings.DOWNLOAD_DIR)
-
-#             logger.info(f"Downloading '{filename}' to '{write_file}.")
-
-#             with open(write_file, "wb") as fp:
-#                 ftp.retrbinary(f"RETR {filename}", fp.write)
-
-#     return write_file
 
 
 def get_ftp_str(filename):
@@ -54,8 +31,14 @@ def get_ftp_str(filename):
     return content
 
 
-def get_observation(city):
-    """Get today's max & min temperatures."""
+def get_observation(city, type):
+    """Get today's max or min observed temperature.
+    
+    TODO: clarify the time period.
+    """
+    if type not in ("min", "max"):
+        raise ValueError(f"type argument must be either 'min' or 'max', not {type}.")
+
     try:
         remote_filename = settings.CITIES[city]["observation_file"]
         station = settings.CITIES[city]["station"]
@@ -67,21 +50,15 @@ def get_observation(city):
     root = ET.ElementTree(ET.fromstring(xml_str))
 
     # day_query = ".//station[@stn-name='{station}']//period"
-    max_query = (
-        ".//station[@stn-name='{station}']//element[@type='maximum_air_temperature']"
-    )
-    min_query = (
-        ".//station[@stn-name='{station}']//element[@type='minimum_air_temperature']"
-    )
 
-    max = root.find(max_query.format(station=station)).text
-    min = root.find(min_query.format(station=station)).text
+    query = f".//station[@stn-name='{station}']//element[@type='{type}imum_air_temperature']"
 
-    return {"max": float(max), "min": float(min)}
+    obs = root.find(query).text
+    return float(obs)
 
 
 def get_future_forecasts(city):
-    """Get today's future forecasts (for the next week)."""
+    """Get today's future forecasts (for the next 6 days)."""
     try:
         remote_filename = settings.CITIES[city]["forecast_file"]
         area = settings.CITIES[city]["forecast_area"]
@@ -110,8 +87,39 @@ def get_future_forecasts(city):
     return forecasts
 
 
+def get_observations_data(type: str) -> dict:
+    """Returns obs data for all cities, ready to write to a file."""
+    if type not in ("min", "max"):
+        raise ValueError(f"type argument must be either 'min' or 'max', not {type}.")
+
+    data = {}
+    for city in settings.CITIES:
+        data[city] = get_observation(city, type)
+
+    if type == "min":
+        data["day"] = utils.get_yesterdays_date()
+    else:
+        data["day"] = utils.get_todays_date()
+
+    return data
+
+
+def get_forecasts_data():
+    """Returns forecast data for all cities, ready to write to a file."""
+    data = {
+        "accessed": utils.get_todays_date()
+    }
+    for city in settings.CITIES:
+        data[city] = get_future_forecasts(city)
+    
+    return data
+
+
 def get_observations_and_future_forecasts_for_all_cities(todays_date):
-    """Get observerations and future forecasts for all cities defined in settings."""
+    """DEPRECATED. Replaced by the 3 functions above.
+    
+    Get observerations and future forecasts for all cities defined in settings.
+    """
     data = {"day": todays_date, "cities": {}}
 
     for city in settings.CITIES.keys():
@@ -126,19 +134,31 @@ def get_observations_and_future_forecasts_for_all_cities(todays_date):
 def main():
     """Entry point for local testing.
 
-    Output file is put into settings.LOCAL_OUTPUT_DIR.
+    Output files are put into settings.LOCAL_OUTPUT_DIR.
     """
-    todays_date = utils.get_todays_date()
-
     if not os.path.exists(settings.LOCAL_OUTPUT_DIR):
         os.makedirs(settings.LOCAL_OUTPUT_DIR)
 
-    output_file = os.path.join(settings.LOCAL_OUTPUT_DIR, f"observation_and_forecast_{todays_date}.json")
-
-    out_file = json.dumps(get_observations_and_future_forecasts_for_all_cities(todays_date), indent=4)
+    # min observations
+    data = get_observations_data("min")
+    output_file = os.path.join(settings.LOCAL_OUTPUT_DIR, f"min_obs_{utils.get_yesterdays_date()}.json")
 
     with open(output_file, "w") as f:
-        f.write(out_file)
+        f.write(json.dumps(data, indent=4))
+
+    # max observations
+    data = get_observations_data("max")
+    output_file = os.path.join(settings.LOCAL_OUTPUT_DIR, f"max_obs_{utils.get_todays_date()}.json")
+
+    with open(output_file, "w") as f:
+        f.write(json.dumps(data, indent=4))
+
+    # forecasts
+    data = get_forecasts_data()
+    output_file = os.path.join(settings.LOCAL_OUTPUT_DIR, f"forecasts_{utils.get_todays_date()}.json")
+
+    with open(output_file, "w") as f:
+        f.write(json.dumps(data, indent=4))
 
 
 if __name__ == "__main__":

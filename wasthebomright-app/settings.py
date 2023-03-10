@@ -1,7 +1,3 @@
-BUCKET_NAME = "wasthebomright"
-PLOT_BUCKET_NAME = "wasthebomright_plots"
-
-DOWNLOAD_DIR = "downloads"
 LOCAL_OUTPUT_DIR = "output"
 
 CITIES = {

@@ -101,8 +101,8 @@ def main():
 
     parsed_data = utils.parse_historical_forecasts(obs_and_forecast_data)
 
-    # print(json.dumps(parsed_data, indent=4))
-    # exit()
+    print(json.dumps(parsed_data, indent=4))
+    exit()
 
     for city_key in settings.CITIES.keys():
         if city_key == args.city:
