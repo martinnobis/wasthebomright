@@ -51,9 +51,13 @@ python image_generator.py -c MEL
 # grabs the 7 files from real_data/obs_and_forecast_files/ and displays the plot for the selected city.
 ```
 
-## TODO
+## Timeline
 
-- [ ] Create a layer containing my dependencies (beautifulsoup etc.), see https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html#configuration-layers-upload
+See https://docs.google.com/drawings/d/1223tV07hAqNIfSy0gFvM-GaI-VUkWGUipE8aLmuQzNw/edit?usp=sharing.
+
+## Architecture
+
+Separate AWS EventBridge Schedules are used to trigger the `ObsMin`, `ObsMax` and `Forecasts` lambdas. The schedules for `ObsMin` and `ObsMax` send a JSON input object to the triggers which is either `{ "type": "min" }` or `{ "type": "max" }`, this is
 
 ## Twitter bot
 

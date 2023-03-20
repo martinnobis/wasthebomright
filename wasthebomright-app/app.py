@@ -10,6 +10,8 @@ import utils
 OBSERVATIONS_MIN_BUCKET_NAME = "observations-min"
 OBSERVATIONS_MAX_BUCKET_NAME = "observations-max"
 FORECASTS_BUCKET_NAME = "bom-forecasts"
+PARSED_FORECASTS_BUCKET_NAME = "parsed-bom-forecasts"
+IMAGES_BUCKET_NAME = "images"
 
 
 def obs_min_lambda(event, context):
@@ -45,21 +47,36 @@ def forecasts_lambda(event, context):
 
     client.put_object(
         Body=bytes(json.dumps(data, indent=4).encode("UTF-8")),
-        Bucket=FORECASTS_BUCKET_NAME,
+        Bucket=OBSERVATIONS_MAX_BUCKET_NAME,
         Key=f"forecasts_{utils.get_todays_date()}.json",
     )
 
 
-def forecasts_lambda(event, context):
+
+def parse_forecasts_lambda(event, context):
     """Entry point for AWS Lambda."""
     client = boto3.client("s3")
 
-    data = bom_scraper.get_forecasts_data()
+    # get the observation file (which is what triggered this lambda), the scheduled event
+    # which triggers this function passes through an argument of the form:
+    # { "type": "min" } or { "type": "max" }
+    if event["type"] == "min":
+        day = utils.get_yesterdays_date()
+        forecasts = utils.get_previous_days_data(OBSERVATIONS_MIN_BUCKET_NAME)
+        obs = utils.get_obj(client, OBSERVATIONS_MIN_BUCKET_NAME, f"obs_min_{day}.json")
+    elif event["type"] == "max":
+        day = utils.get_todays_date()
+        forecasts = utils.get_previous_days_data(OBSERVATIONS_MAX_BUCKET_NAME, skip_latest=True)
+        obs = utils.get_obj(client, OBSERVATIONS_MAX_BUCKET_NAME, f"obs_max_{day}.json")
+    else:
+        raise ValueError(f"Could not recognise event type argument: {event}")
+
+    data = utils.parse_historical_forecasts(forecasts, obs, event["type"])
 
     client.put_object(
         Body=bytes(json.dumps(data, indent=4).encode("UTF-8")),
-        Bucket=FORECASTS_BUCKET_NAME,
-        Key=f"forecasts_{utils.get_todays_date()}.json",
+        Bucket=PARSED_FORECASTS_BUCKET_NAME,
+        Key=f"parsed_{event['type']}_{day}.json",
     )
 
 
